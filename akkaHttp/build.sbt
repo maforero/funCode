@@ -2,7 +2,7 @@ name := "akkaHttp"
 
 version := "1.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http-core" % "10.0.4",
