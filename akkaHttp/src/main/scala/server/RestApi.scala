@@ -1,21 +1,24 @@
 package server
 
-import spray.json._
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, Materializer }
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.StatusCodes._
-import service.entities._
-import service.domain._
-import service.database._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import scala.concurrent.ExecutionContext
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
+import service.database._
+import service.domain._
+import service.entities._
+import spray.json._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 trait RestApi {
-  import TweetProtocol._
   import TweetEntity._
   import TweetEntityProtocol.EntityFormat
+  import TweetProtocol._
 
   implicit val system: ActorSystem
 
@@ -23,37 +26,48 @@ trait RestApi {
 
   implicit val ec: ExecutionContext
 
-  val route =
+  val route: Route ={
     pathPrefix("tweets"){
-      (post & entity(as[Tweet])) { tweet =>
-        complete {
-          TweetManager.save(tweet) map { r =>
-            Created -> Map("id" -> r.id).toJson
-          }
+      post {
+        entity(as[Tweet]){
+          tweet =>
+            complete{
+              TweetManager.save(tweet) map{ r =>
+                StatusCodes.Created -> Map("id" -> r.id).toJson
+              }
+            }
         }
       } ~
-        (get & path(Segment)) { id =>
-          complete {
-            TweetManager.findById(id) map { t =>
-              OK -> t
+      get {
+        path(Segment){
+          id =>
+            complete {
+              TweetManager.findByUser(id) map { t =>
+                StatusCodes.OK -> t
+              }
             }
-          }
-        } ~
-        (delete & path(Segment)) { id =>
-          complete {
-            TweetManager.deleteById(id) map { _ =>
-              NoContent
+        }
+      } ~
+      delete {
+        path(Segment){
+          id =>
+            complete{
+              TweetManager.deleteByUser(id) map { _ =>
+                StatusCodes.NoContent
+              }
             }
-          }
-        } ~
-        (get) {
-          complete {
-            TweetManager.find map { ts =>
-              OK -> ts.map(_.as[TweetEntity])
-            }
+        }
+      } ~
+      get{
+        complete{
+          TweetManager.find map { ts =>
+            StatusCodes.OK -> ts
           }
         }
+      }
     }
+  }
+
 
 }
 object Api extends App with RestApi {

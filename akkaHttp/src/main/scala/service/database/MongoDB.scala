@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory
 import reactivemongo.api.MongoDriver
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 
