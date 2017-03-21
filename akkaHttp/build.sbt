@@ -16,4 +16,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" % "akka-slf4j_2.11" % "2.4.17",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 )
-    
+
+libraryDependencies += "org.scalaj" % "scalaj-http_2.11" % "2.3.0"
