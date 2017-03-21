@@ -22,5 +22,7 @@ class Stuff extends Simulation {
       .check(status.is(200))
       .headers(headers_0))
 
-  setUp(scn.inject(constantUsersPerSec(200).during(10 seconds))).protocols(httpProtocol)
+  setUp(scn.inject(constantUsersPerSec(2000).during(10 seconds)))
+    .protocols(httpProtocol)
+    .assertions(global.responseTime.max.lessThan(200),global.successfulRequests.percent.greaterThan(95))
 }
