@@ -6,9 +6,9 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 /**
   * Created by maria.forero on 14/07/2017.
   */
-object App extends App{
+object ClusterApp extends App{
 
-  implicit val system = ActorSystem("test")
+  val system = ActorSystem("test")
 
   val singletonManager = system.actorOf(ClusterSingletonManager.props(
     singletonProps = WorkersIdGen.props(),
