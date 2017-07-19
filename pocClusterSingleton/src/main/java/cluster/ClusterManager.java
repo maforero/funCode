@@ -7,13 +7,15 @@ import java.io.FileNotFoundException;
 public class ClusterManager {
 
 
+
+
     public static void main(String[] args) throws FileNotFoundException {
         launchCluster();
         launchCluster2();
     }
 
     public static void launchCluster(){
-        ActorRef consumer = ConsumerActor.initialize(2552,"akka.tcp://master-actorsystem@127.0.0.1:2553/user/masterProxy");
+        ActorRef consumer = ConsumerActor.initialize(2552);
 
         ActorRef masterRef = Master.initialize(2553);
         Worker.initialize(2554, masterRef);
@@ -27,7 +29,7 @@ public class ClusterManager {
 
 
     public static void launchCluster2(){
-        ActorRef consumer = ConsumerActor.initialize(2562,"akka.tcp://master-actorsystem@127.0.0.1:2553/user/masterProxy");
+        ActorRef consumer = ConsumerActor.initialize(2562);
 
         ActorRef masterRef = Master.initialize(2563);
         Worker.initialize(2564, masterRef);

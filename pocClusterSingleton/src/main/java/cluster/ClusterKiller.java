@@ -1,17 +1,12 @@
 package cluster;
 
 import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
-import akka.dispatch.Mapper;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import akka.cluster.singleton.ClusterSingletonProxy;
+import akka.cluster.singleton.ClusterSingletonProxySettings;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 /**
  * Created by maria.forero on 18/07/2017.
@@ -19,28 +14,31 @@ import scala.concurrent.duration.Duration;
 public class ClusterKiller {
 
     public static void main(String[] args){
-     killMaster();
+     killMasterAndStartAnotherWorker();
     }
 
-    public static void killMaster(){
+    private static ActorRef getMasterProxy(){
 
-        Config config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + 2580).withFallback(ConfigFactory.load());
+        Config config = ConfigFactory
+                .parseString("master.akka.remote.netty.tcp.port=" + 2580)
+                .withFallback(ConfigFactory.load()).getConfig("master");
 
-        final ActorSystem system = ActorSystem.create("ReceiverSys",config);
+        final ActorSystem actorSystem = ActorSystem.create("master-actorsystem", config);
 
-        String masterPath = "akka.tcp://master-actorsystem@127.0.0.1:2553/user/masterProxy";
-        ActorSelection selection = system.actorSelection(masterPath);
-        Timeout timeout = new Timeout(Duration.create(5, "seconds"));
-        Future<ActorRef> actorRefFuture = selection.resolveOne(timeout);
+        ClusterSingletonProxySettings proxySettings =
+                ClusterSingletonProxySettings.create(actorSystem).withRole("master");
 
-        ExecutionContext ec = system.dispatcher();
+        return actorSystem.actorOf(ClusterSingletonProxy.props("/user/master", proxySettings),
+                "masterProxy");
+    }
 
-        actorRefFuture.flatMap(new Mapper<ActorRef, Future<Object>>() {
-            @Override
-            public Future<Object> apply(ActorRef actorRef) {
-                System.out.println("killing Master: "+ actorRef);
-                return Patterns.ask(actorRef, PoisonPill.getInstance(), timeout);
-            }
-        },ec);
+    public static void killMasterAndStartAnotherWorker(){
+        ActorRef masterRef = getMasterProxy();
+        masterRef.tell(PoisonPill.getInstance(),ActorRef.noSender());
+        startAnotherWorker(masterRef);
+    }
+
+    public static void startAnotherWorker(ActorRef masterRef){
+        Worker.initialize(2584, masterRef);
     }
 }

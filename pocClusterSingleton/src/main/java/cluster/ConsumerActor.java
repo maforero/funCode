@@ -4,6 +4,8 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.cluster.singleton.ClusterSingletonProxy;
+import akka.cluster.singleton.ClusterSingletonProxySettings;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import com.typesafe.config.Config;
@@ -19,7 +21,7 @@ import static javaslang.Predicates.instanceOf;
 public class ConsumerActor extends UntypedActor {
 
     private LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-    private ActorRef master;
+    private static ActorRef master;
 
     public ConsumerActor(){
 
@@ -47,16 +49,20 @@ public class ConsumerActor extends UntypedActor {
     }
 
 
-    private static Props props(String masterPath) {
-        return Props.create(ConsumerActor.class, masterPath);
-    }
 
-    public static ActorRef initialize(Integer port, String masterPath){
+    public static ActorRef initialize(Integer port){
         Config config = ConfigFactory
                 .parseString("consumer-actor.akka.remote.netty.tcp.port=" + port)
                 .withFallback(ConfigFactory.load()).getConfig("consumer-actor");
         final ActorSystem actorSystem = ActorSystem.create("master-actorsystem", config);
-        return actorSystem.actorOf(props(masterPath),"Consumer");
+
+        ClusterSingletonProxySettings proxySettings =
+                ClusterSingletonProxySettings.create(actorSystem).withRole("master");
+
+       master = actorSystem.actorOf(ClusterSingletonProxy.props("/user/master", proxySettings),
+                "masterProxy");
+
+        return actorSystem.actorOf(Props.create(ConsumerActor.class),"Consumer");
     }
 
 }
